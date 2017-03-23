@@ -15,7 +15,7 @@ buffer db 20 dup('')
 
 LOCALS
 
-include stdio.inc
+include libasm\stdio.inc
 
 main proc c
     mov ax, @data

@@ -5,8 +5,8 @@
 
 
 ;;; include section
-include string.inc
-include stdlib.inc
+include libasm\string.inc
+include libasm\stdlib.inc
 
 ;;; fopen() modes
 RO equ 0                    ; read only
