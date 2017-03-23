@@ -60,6 +60,14 @@ getc macro
 endm
 
 
+; char getch() -> al
+_getch proc c
+	xor ah, ah
+	int 16h
+	ret
+_getch endp
+
+
 ; char fgetc(FILE handle) -> al
 fgetc proc c
     arg @handle
@@ -116,48 +124,54 @@ endif
 endm
 
 
+; FIXME: first backspace
 ; int gets(char *s) -> ax
 gets proc c
-    arg @s
-    uses si
-
-    mov si, @s
-@@read_loop:
-    getc
-
-    cmp al, 13
-    je @@end
-    cmp al, 8
-    je @@backspace
-
-    mov byte ptr [si], al
-    inc si
-    jmp @@read_loop
-
-@@backspace:
-    ; get current pos in dx(dl - x, dh - y)
-    mov ah, 03h
-    int 10h
-
-    ; save it
-    push dx
-
-    ; erase char
-    mov ah, 02h
-    mov dl, ' '
-    int 21h
-
-    ; restore position
-    pop dx
-    mov ah, 02h
-    int 10h
-    ; rewrite char by new
-    dec si
-    jmp @@read_loop
-
+	arg @str
+	uses bx, cx, dx
+	mov bx, @str
+	xor cx, cx
+@@cycle:
+	getc
+	cmp al, 8
+	jne @@ns0
+	cmp cx, 0
+	ja @@ns2
+	push bx
+	push cx
+	push dx
+	mov ah, 03h
+	mov bh, 0
+	int 10h
+	inc dl
+	mov ah, 02h
+	int 10h
+	pop dx
+	pop cx
+	pop bx
+	jmp @@cycle
+@@ns2:
+	dec bx
+	dec cx
+	putc ' '
+	putc 8
+	jmp @@cycle
+@@ns0:
+	cmp al, 0dh
+	jne @@ns3
+	cmp cx, 0
+	jne @@end
+	putc 0ah
+	jmp @@cycle
+@@ns3:
+	mov [bx], al
+	inc bx
+	inc cx
+	jmp @@cycle
 @@end:
-    mov byte ptr [si], 0
-    ret
+	mov byte ptr[bx], 0
+	mov ax, @str
+	ret
 gets endp
 
 
@@ -313,7 +327,7 @@ _putfloat proc c
     arg @n, @handle
     local @@temp_buffer
 
-    push 6                  ; by default
+    push 4                ; by default
     push word ptr [offset @@temp_buffer]
     push @n
     call ftoa

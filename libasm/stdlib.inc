@@ -4,6 +4,9 @@
 ; License: MIT
 
 
+include libasm\math.inc
+
+
 	NULL 			equ 0
 	EXIT_SUCCESS 	equ 0
 	EXIT_FAILURE	equ 1
@@ -17,6 +20,45 @@
 	_atexit_arr_len	equ 32
 	_atexit_num		db 0
 	_atexit_arr		dw _atexit_arr_len dup(NULL)
+	
+	
+; TODO: rand
+; TODO: srand
+; TODO: getenv
+; TODO: system
+; TODO: bsearch
+; TODO: qsort
+	
+	
+; void qsort(void *arr, size_t arr_len, size_t size_elem, int (*comparator)(const *void, const *void))
+
+
+; void _search(const void *searchkey, const void *arr, size_t arr_len, size_t size_elem, int (*funccompar)(const void *, const void *))
+_search proc c
+	arg @searchkey, @arr, @arr_len, @size_elem, @comparator
+	uses ax, bx, cx, dx, si
+	mov ax, @comparator
+	mov bx, @searchkey
+	mov cx, @arr_len
+	mov dx, @size_elem
+	mov si, @arr
+@@cycle:
+	cmp cx, 0
+	je @@not_found
+	push bx
+	push si
+	call ax
+	add sp, 4
+	cmp ax, 0
+	je @@end
+	dec cx
+	add si, dx
+	jmp @@cycle
+@@not_found:
+	mov ax, NULL
+@@end:
+	ret
+_search endp
 
 
 ; void exit(int value)
@@ -89,7 +131,7 @@ endif
 
 
 ; void abort(void)
-abort proc c
+abort proc c 
 	putc SOUND_SIGNAL
 	mov ax, SIGABRT
 	mov ah, 4ch
@@ -192,7 +234,7 @@ itoa endp
 ftoa proc c
     arg @number, @buffer, @precession
     local @@temp
-    uses bx, cx, dx
+    uses bx, cx, dx, si
 
     mov bx, @number
     fld dword ptr[bx]
@@ -234,9 +276,27 @@ ftoa proc c
     fadd dword ptr[bx]
     inc dx
 @@ns:
+	sub sp, 12
+	push sp
+	lea si, @precession
+	fild word ptr[si]
+	mov si, sp
+	add si, 6
+	fstp dword ptr[si]
+	push si
+	mov @precession, 10
+	lea si, @precession
+	fild word ptr[si]
+	mov si, sp
+	add si, 12
+	fstp dword ptr[si]
+	push si
+	call pow
+	add sp, 6
+	mov si, sp
+    fmul dword ptr[si]    ; make it int
+	add sp, 12
     pop ax
-    fimul @precession    ; make it int
-
     fistp dword ptr[bx]
     mov cx, word ptr[bx]    ; fraction -> cx
 

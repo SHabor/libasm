@@ -4,9 +4,6 @@
 ; License: MIT
 
 
-; TODO: random
-
-
 ; int iabs(word num)
 iabs proc c
 	arg @num
